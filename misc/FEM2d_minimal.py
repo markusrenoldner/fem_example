@@ -314,7 +314,7 @@ def grad_u_exact(x, y):
     uy = np.pi * np.sin(np.pi*x) * np.cos(np.pi*y)
     return np.array([ux, uy])
 
-def solve_poission(n=2,plotting=False):
+def solve_poisson(n=2,plotting=False):
 
     nx, ny = n,n
     nodes, elements, boundary_nodes = generate_structured_triangular_mesh(nx, ny)
