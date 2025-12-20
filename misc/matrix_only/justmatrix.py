@@ -143,7 +143,34 @@ if __name__ == "__main__":
 
 
     K = assemble_global_matrix(nodes, elements)
-    print(K)
+    # print(K)
 
-    K_mod = apply_dirichlet_bc(K, boundary_nodes, lambda x, y: 0, nodes)
+    # K_mod = apply_dirichlet_bc(K, boundary_nodes, lambda x, y: 0, nodes)
     # print(K_mod)
+
+    ##########################################################
+    # print local matrix
+
+    # bottom-left square
+    i = 0
+    j = 0
+    ny = 3
+
+    def node_id(i, j):
+        return i * (ny + 1) + j
+
+    n0 = node_id(0, 0)
+    n1 = node_id(1, 0)
+    n2 = node_id(0, 1)
+    n3 = node_id(1, 1)
+
+    tris = [
+        [n0, n1, n3],
+        [n0, n3, n2],
+    ]
+
+    for k, tri in enumerate(tris):
+        tri_nodes = nodes[tri]
+        print(f"\nYour triangle {k}")
+        print(tri_nodes)
+        print(local_stiffness(tri_nodes))

@@ -54,10 +54,6 @@ def triangle_area_and_transform(tri_nodes):
     J = np.column_stack((v1 - v0, v2 - v0))  # shape (2,2)
     detJ = np.linalg.det(J)
     area = 0.5 * abs(detJ)
-
-
-    # area = 0.5 * np.abs(np.linalg.det(J))
-    # return area, J
     return area, J, detJ
 
 # def local_stiffness(tri_nodes):
