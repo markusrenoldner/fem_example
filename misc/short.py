@@ -186,12 +186,20 @@ def solve_poission(n=2,plotting=False):
 
     return u, L2_error
 
-def conv_test(n_max):
+def conv_test(k_max):
+    errors = []
+    for k in range(0,k_max):
+        n=2**k
+# def conv_test(n_max):
 
-    for n in range(2,n_max):
+#     for n in range(2,n_max):
         u, L2_error = solve_poission(n)
         # print(f"n={n}, L2 error={L2_error:.6f}")
-        print(L2_error)
+        errors.append(L2_error)
+
+    for i in range(0, len(errors)):
+        rate = np.log(errors[i-1]/errors[i]) / np.log(2)
+        print(errors[i], "\t", rate)
 
     return
 
