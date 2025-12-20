@@ -44,37 +44,6 @@ def generate_structured_triangular_mesh(nx, ny):
 
     return nodes, elements, boundary_nodes
 
-def plot_mesh(nodes, elements):
-    """
-    Plot a 2D triangular mesh.
-
-    Parameters:
-        nodes (ndarray): shape (num_nodes, 2), coordinates of nodes
-        elements (ndarray): shape (num_elements, 3), indices of triangle vertices
-    """
-    fig, ax = plt.subplots()
-    
-    # Draw triangle edges
-    edges = []
-    for tri in elements:
-        for i in range(3):
-            a = nodes[tri[i]]
-            b = nodes[tri[(i + 1) % 3]]
-            edges.append([a, b])
-    edge_collection = LineCollection(edges, colors='k', linewidths=0.5)
-    ax.add_collection(edge_collection)
-
-    # Draw nodes
-    ax.plot(nodes[:, 0], nodes[:, 1], 'o', markersize=5, color='red')
-
-    ax.set_aspect('equal')
-    ax.set_xlim(0, 1)
-    ax.set_ylim(0, 1)
-    ax.set_title("2D Triangular Mesh")
-    plt.tight_layout()
-    plt.show()
-
-
 def reference_gradients():
     return np.array([
         [-1.0, -1.0],  # grad phi_1
@@ -85,7 +54,8 @@ def reference_gradients():
 def triangle_area_and_transform(tri_nodes):
     v0, v1, v2 = tri_nodes
     J = np.column_stack((v1 - v0, v2 - v0))  # shape (2,2)
-    area = 0.5 * np.abs(np.linalg.det(J))
+    detJ = np.linalg.det(J)
+    area = 0.5 * abs(detJ)
     return area, J
 
 def local_stiffness(tri_nodes):
@@ -116,42 +86,25 @@ def assemble_global_matrix(nodes, elements):
     return K
 
 
-def apply_dirichlet_bc(K, boundary_nodes, g, nodes):
-    K_mod = K.copy()
-
-    for node in boundary_nodes:
-        K_mod[node, :] = 0
-        K_mod[:, node] = 0
-        K_mod[node, node] = 1
-    return K_mod
-
-
-
 
 if __name__ == "__main__":
-    np.set_printoptions(threshold=10000, precision=3, suppress=True, linewidth=1000)
 
+    np.set_printoptions(threshold=10000, precision=3, suppress=True, linewidth=1000)
 
     nx = 3
     ny = 3
     nodes, elements, boundary_nodes = generate_structured_triangular_mesh(nx, ny)
 
     # plot_mesh(nodes, elements)
-    # print(nodes)
-    # print(elements)
-    # print(boundary_nodes)
+    print("nodes\n",nodes)
+    print("elems\n",elements)
 
-
+    # print global matrix
     K = assemble_global_matrix(nodes, elements)
-    # print(K)
+    print("global matrix\n",K)
 
-    # K_mod = apply_dirichlet_bc(K, boundary_nodes, lambda x, y: 0, nodes)
-    # print(K_mod)
 
-    ##########################################################
-    # print local matrix
-
-    # bottom-left square
+    # print local matrices of first two triangles
     i = 0
     j = 0
     ny = 3
