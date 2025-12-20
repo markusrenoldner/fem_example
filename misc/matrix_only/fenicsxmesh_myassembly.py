@@ -30,9 +30,11 @@ coords = msh.geometry.x[:, :2]
 conn_array = msh.topology.connectivity(msh.topology.dim, 0).array.reshape((-1, 3))
 nodes = np.array(coords)
 elements = np.array(conn_array, dtype=int)
+print(nodes)
+print(elements)
 
 # -----------------------
-# 2. Define local stiffness function
+# 2. Define local stiffness matrix
 # -----------------------
 def reference_gradients():
     return np.array([
@@ -75,7 +77,7 @@ for elem in elements:
 
 
 # -----------------------
-# 4. Assemble FEniCSx matrix
+# 4. Assemble the same matrix in FEniCSx
 # -----------------------
 V = fem.functionspace(msh, ("Lagrange", 1))
 u = ufl.TrialFunction(V)
@@ -100,4 +102,12 @@ print("\nManual assembly global matrix:")
 print(K_manual)
 print("\nFEniCSx global matrix:")
 print(dense_array)
-print("\nMax absolute difference:", np.max(np.abs(K_manual - dense_array)))
+print("\nMax absolute difference:", np.max(np.abs(K_manual - dense_array)),"\n")
+
+# check whether FEniCSx’s local DOF ordering for each triangle
+# matches the mesh vertex ordering you used in manual assembly. 
+# checks if any matrix mismatch is due to a permutation of
+# indices rather than an error in stiffness computation.
+dmap = V.dofmap
+for cell in range(len(elements)):
+    print(f"Cell {cell} nodes: {elements[cell]}, DOFs: {dmap.cell_dofs(cell)}")
