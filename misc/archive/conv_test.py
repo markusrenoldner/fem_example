@@ -63,6 +63,7 @@ def solve_poisson(iter):
 
 
     nx, ny = 2**iter, 2**iter  # Number of elements in x and y direction
+    # print(nx)
     nodes, elements, boundary_nodes = generate_structured_triangular_mesh(nx, ny)
     
     grads = reference_gradients()
@@ -77,16 +78,15 @@ def solve_poisson(iter):
 
     # test global stiffness matrix assembly
     K = assemble_global_matrix(nodes, elements)
-    # test load vector
     def f(x, y):
-        return 100*y**5 # + y  # Example function
+        return - 2 * np.pi**2 * np.sin(np.pi * x) * np.sin(np.pi * y)
+    
     b = assemble_load_vector(nodes, elements, f)
     def g(x, y):
         return 0.
     
-    # K_mod, b_mod = apply_dirichlet_bc(K, b, boundary_nodes, g)
 
-    K_mod, b_mod = apply_dirichlet_bc(K, b, boundary_nodes, g,nodes)
+    K_mod, b_mod = apply_dirichlet_bc(K, b, boundary_nodes, g, nodes)
 
     # solve the system
     u = solve_system(K_mod, b_mod)
@@ -97,7 +97,7 @@ def solve_poisson(iter):
 
 if __name__ == "__main__":
 
-    for iter in range(1,5):
+    for iter in range(1,6):
         L2_error, H1_error = solve_poisson(iter)
 
         # compute errors

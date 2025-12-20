@@ -128,6 +128,12 @@ def local_stiffness(tri_nodes):
          = A_T * grad(phi_i) * grad(phi_j)
 
     """
+    # Ensure a consistent (positive) orientation for the affine map
+    v0, v1, v2 = tri_nodes
+    J0 = np.column_stack((v1 - v0, v2 - v0))
+    if np.linalg.det(J0) < 0:
+        tri_nodes = tri_nodes[[0, 2, 1]]
+
     grads_ref = reference_gradients()  # shape (3,2)
     area, J = triangle_area_and_transform(tri_nodes)
     JT_inv = np.linalg.inv(J).T  # J^{-T}
@@ -230,6 +236,9 @@ def apply_dirichlet_bc(K, b, boundary_nodes, g, nodes):
 
         # Set prescribed value
         b_mod[node] = g(*nodes[node])
+    
+        # print(f"Applying Dirichlet BC at node {node}, position {nodes[node]}, value {g(*nodes[node])}")
+
 
     return K_mod, b_mod
 
@@ -295,80 +304,133 @@ def plot_fem_solution(nodes, elements, u):
     plt.show()
 
 
+def compute_L2_error(nodes, elements, u_h, u_exact):
+    error_sq = 0.0
+    for el in elements:
+        tri_nodes = nodes[el]
+        area, J = triangle_area_and_transform(tri_nodes)
+        # Midpoint of triangle for quadrature (P1 exact)
+        midpoint = np.mean(tri_nodes, axis=0)
+        
+        # FEM solution at midpoint (P1 interpolation)
+        bary_coords = np.array([1/3, 1/3, 1/3])
+        u_h_mid = np.dot(u_h[el], bary_coords)
+        
+        u_ex_mid = u_exact(midpoint[0], midpoint[1])
+        error_sq += area * (u_h_mid - u_ex_mid)**2
+    return np.sqrt(error_sq)
+
+
+
+def compute_H1_error(nodes, elements, u_h, grad_u_exact):
+    error_sq = 0.0
+    for el in elements:
+        tri_nodes = nodes[el]
+        area, J = triangle_area_and_transform(tri_nodes)
+        JT_inv = np.linalg.inv(J).T
+        
+        grads_ref = reference_gradients()  # shape (3,2)
+        # grads_phys = grads_ref @ JT_inv  # shape (3,2)
+        grads_phys = np.linalg.solve(J.T, grads_ref.T).T
+        
+        # FEM solution gradient on element (constant)
+        grad_u_h = np.zeros(2)
+        for i in range(3):
+            grad_u_h += u_h[el[i]] * grads_phys[i]
+        
+        # Midpoint for exact gradient evaluation
+        midpoint = np.mean(tri_nodes, axis=0)
+        grad_u_ex = np.array(grad_u_exact(midpoint[0], midpoint[1]))
+        
+        error_sq += area * np.sum((grad_u_h - grad_u_ex)**2)
+    return np.sqrt(error_sq)
+
+
+def u_exact(x, y):
+    # return np.sin(np.pi * x) * np.sin(np.pi * y)
+    return np.sin(np.pi*x) * np.sinh(np.pi*y)
+
+def grad_u_exact(x, y):
+    # return np.pi*np.array([np.cos(np.pi * x) * np.sin(np.pi * y),
+    #                        np.sin(np.pi * x) * np.cos(np.pi * y)])
+    ux = np.pi * np.cos(np.pi*x) * np.sinh(np.pi*y)
+    uy = np.pi * np.sin(np.pi*x) * np.cosh(np.pi*y)
+    return np.array([ux, uy])
+
+
+from mpi4py import MPI
+from dolfinx.mesh import *
+from dolfinx import mesh
+from dolfinx.mesh import DiagonalType
+
+# nx, ny = 3,3
+def solve_poission(n=2,plotting=False):
+
+    nx, ny = n,n
+    nodes, elements, boundary_nodes = generate_structured_triangular_mesh(nx, ny)
+    # print("Nodes:\n", nodes)
+    # print("Elements:\n", elements)
+    # print("Boundary Nodes:\n", boundary_nodes)
+    # plot_mesh(nodes, elements)
+
+    # nx, ny = n,n
+    # msh = mesh.create_unit_square(MPI.COMM_WORLD, nx,ny, 
+    #                             mesh.CellType.triangle,
+    #                             diagonal=DiagonalType.right)
+    
+    # nodes=msh.geometry.x[:,0:2]
+    # elements=msh.topology.connectivity(msh.topology.dim, 0).array.reshape((-1, 3))
+    # boundary_facets = mesh.locate_entities_boundary(msh, msh.topology.dim - 1, lambda x: np.full(x.shape[1], True))
+    # facet_to_nodes = msh.topology.connectivity(msh.topology.dim - 1, 0)
+    # boundary_nodes = np.unique(np.hstack([facet_to_nodes.links(f) for f in boundary_facets]))
+
+    K = assemble_global_matrix(nodes, elements)
+    # print(K)
+
+    # f = lambda x, y: -2*np.pi**2*np.sin(np.pi*x)*np.sin(np.pi*y)
+    f = lambda x, y: 1.0
+    f = lambda x, y: 0.0
+    # f = lambda x, y: 2*(np.pi**2)* np.sin(np.pi*x)*np.sin(np.pi*y)
+
+    b = assemble_load_vector(nodes, elements, f)
+    # print(b)
+
+    # dirichlet
+    g = lambda x, y: 0.0 
+    g = lambda x, y: u_exact(x,y)
+    # print(u_exact(0.234,0))
+
+    K_mod, b_mod = apply_dirichlet_bc(K, b, boundary_nodes, g, nodes)
+    # print(K_mod)
+    u = solve_system(K_mod, b_mod)
+    # print("max", u.max())
+    if plotting: plot_fem_solution(nodes, elements, u)
+
+    L2_error = compute_L2_error(nodes, elements, u, u_exact)
+    H1_error = compute_H1_error(nodes, elements, u, grad_u_exact)
+
+
+    return u, L2_error, H1_error
+
+def conv_test(k_max):
+
+    for k in range(0,k_max):
+        n=2**k
+        u, L2_error, H1_error = solve_poission(n)
+        # print(f"n={n}, L2 error={L2_error:.6f}")
+        print(L2_error)#,"\t", H1_error)
+
+    return
+
+
 if __name__ == "__main__":
 
     np.set_printoptions(threshold=10000, precision=3, suppress=True, linewidth=1000)
 
-    # Example usage
-    nx, ny = 10,10
-    nodes, elements, boundary_nodes = generate_structured_triangular_mesh(nx, ny)
-    
-    print("Nodes:\n", nodes)
-    print("Elements:\n", elements)
-    print("Boundary Nodes:\n", boundary_nodes)
-    
-    # Check the shape of the outputs
-    print("Number of nodes:", nodes.shape[0])
-    print("Number of elements:", elements.shape[0])
-    print("Number of boundary nodes:", boundary_nodes.shape[0])
+    # solve_poission(5, plotting=False)
 
+    conv_test(6)
 
-    # Plot the mesh
-    # plot_mesh(nodes, elements)
+    from fenicsx import solve_poisson_fenicsx
 
-    # Test reference gradients
-    grads = reference_gradients()
-    print("Reference gradients:\n", grads)
-    # Test triangle area and transformation
-    tri_nodes = np.array([[0, 0], [1, 0], [0, 1]])
-    area, J = triangle_area_and_transform(tri_nodes)
-    print("Area of reference triangle:", area)
-    print("Jacobian of reference triangle:\n", J)
-
-    # Test local stiffness matrix
-    Ke = local_stiffness(tri_nodes)
-    print("Local stiffness matrix:\n", Ke)
-    # Example of local stiffness matrix for a triangle with specific vertices
-    tri_nodes = np.array([[0, 0], [1, 0], [0, 1]])
-    Ke = local_stiffness(tri_nodes)
-
-    # test global stiffness matrix assembly
-    K = assemble_global_matrix(nodes, elements)
-    print("Global stiffness matrix shape:", K.shape)
-    print("Global stiffness matrix:\n", K)
-    # Check symmetry of the global stiffness matrix
-    print("Is global stiffness matrix symmetric?", np.allclose(K, K.T))
-    # Check if the global stiffness matrix is positive definite
-    eigenvalues = np.linalg.eigvalsh(K)
-    print("Eigenvalues of global stiffness matrix:", eigenvalues)
-    print("Are all eigenvalues positive?", np.all(eigenvalues > 0))
-    # Check if the global stiffness matrix is sparse
-    print("Is global stiffness matrix sparse?", np.count_nonzero(K) < 0.1 * K.size)
-
-    # test load vector
-    def f(x, y):
-        return 100*y**5 # + y  # Example function
-    b = assemble_load_vector(nodes, elements, f)
-    print("Global load vector shape:", b.shape)
-    print("Global load vector:\n", b)
-    
-    # apply Dirichlet boundary conditions
-    def g(x, y):
-        return 0.
-    
-    K_mod, b_mod = apply_dirichlet_bc(K, b, boundary_nodes, g,nodes)
-    print("Modified stiffness matrix shape:", K_mod.shape)
-    print("Modified stiffness matrix:\n", K_mod)
-    print("Modified load vector shape:", b_mod.shape)
-    print("Modified load vector:\n", b_mod)
-    # check if load vec is zero at Dirichlet nodes
-    print("Load vector at Dirichlet nodes:", b_mod[boundary_nodes])
-
-
-    # solve the system
-    u = solve_system(K_mod, b_mod)
-    
-    print("Solution vector:\n", u)
-
-    # plot
-    plot_fem_solution(nodes, elements, u)
+    # solve_poisson_fenicsx(5,plotting=False)
