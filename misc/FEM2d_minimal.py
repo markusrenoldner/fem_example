@@ -187,6 +187,40 @@ def solve_system(K, b):
     u = np.linalg.solve(K, b)
     return u
 
+def fem_p1_function(u, nodes, elements):
+    """
+    Return a function representing the P1 FEM solution.
+
+    Inputs:
+        u: (N_nodes,) array of nodal values
+        nodes: (N_nodes, 2) node coordinates
+        elements: (N_elements, 3) node indices per triangle
+
+    Output:
+        A function sol(x,y) that returns the FEM solution at (x,y)
+    """
+    from scipy.spatial import Delaunay
+    tri = Delaunay(nodes)
+
+    def sol(x, y):
+        p = np.array([x, y])
+        simplex = tri.find_simplex(p)
+        if simplex == -1:
+            raise ValueError("Point outside mesh")
+
+        vert_indices = elements[simplex]
+        verts = nodes[vert_indices]
+
+        # Compute barycentric coordinates
+        T = np.vstack((verts.T, np.ones(3)))
+        v = np.array([x, y, 1])
+        bary = np.linalg.solve(T, v)
+
+        return np.dot(bary, u[vert_indices])
+
+    return sol
+
+
 
 def plot_fem_solution(nodes, elements, u):
     triang = mtri.Triangulation(nodes[:, 0], nodes[:, 1], elements)
