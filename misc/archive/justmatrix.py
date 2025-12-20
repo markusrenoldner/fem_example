@@ -146,4 +146,4 @@ if __name__ == "__main__":
     print(K)
 
     K_mod = apply_dirichlet_bc(K, boundary_nodes, lambda x, y: 0, nodes)
-    print(K_mod)
+    # print(K_mod)
