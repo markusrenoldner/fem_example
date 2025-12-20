@@ -64,7 +64,8 @@ def solve_poisson_fenicsx(N,plotting=False):
     uh = fem.Function(V)
     uh.name = "uh"
 
-    A = assemble_matrix(bilinear_form, bcs=[bc])
+    # A = assemble_matrix(bilinear_form, bcs=[bc])
+    A = assemble_matrix(bilinear_form, bcs=[])
 
     A.assemble()
     b = create_vector(linear_form)
@@ -80,7 +81,7 @@ def solve_poisson_fenicsx(N,plotting=False):
     rows, cols = A.getSize()
     dense_array = A.getValues(range(rows), range(cols))
     np.set_printoptions(threshold=10000, precision=3, suppress=True, linewidth=1000)
-    # print(dense_array)
+    print(dense_array)
     
 
 
@@ -139,3 +140,5 @@ if __name__ == "__main__":
     np.set_printoptions(threshold=10000, precision=3, suppress=True, linewidth=1000)
     
     solve_poisson_fenicsx(3,False)
+
+    # conv_test(7)
