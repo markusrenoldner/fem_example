@@ -1,16 +1,15 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.collections import LineCollection
+
 
 def generate_structured_triangular_mesh(nx, ny):
     """
     Generate a structured triangular mesh on the unit square [0,1]x[0,1].
 
-    Parameters:
-        nx (int): number of elements in x-direction
-        ny (int): number of elements in y-direction
-
     Returns:
-        nodes (ndarray): shape (num_nodes, 2), coordinates of nodes
-        elements (ndarray): shape (num_elements, 3), indices of triangle vertices
+        nodes (ndarray):          shape (num_nodes, 2), coordinates of nodes
+        elements (ndarray):       shape (num_elements, 3), indices of triangle vertices
         boundary_nodes (ndarray): sorted array of boundary node indices
     """
     # Grid spacing
@@ -51,9 +50,6 @@ def generate_structured_triangular_mesh(nx, ny):
     return nodes, elements, boundary_nodes
 
 
-import matplotlib.pyplot as plt
-from matplotlib.collections import LineCollection
-
 def plot_mesh(nodes, elements):
     """
     Plot a 2D triangular mesh.
@@ -83,6 +79,7 @@ def plot_mesh(nodes, elements):
     ax.set_title("2D Triangular Mesh")
     plt.tight_layout()
     plt.show()
+
 
 def reference_gradients():
     """
@@ -289,7 +286,7 @@ import matplotlib.tri as mtri
 def plot_fem_solution(nodes, elements, u):
     triang = mtri.Triangulation(nodes[:, 0], nodes[:, 1], elements)
     plt.figure()
-    plt.tripcolor(triang, u, shading='gouraud')
+    plt.tripcolor(triang, u, shading='gouraud', cmap='viridis')
     plt.colorbar()
     plt.xlabel('x')
     plt.ylabel('y')
