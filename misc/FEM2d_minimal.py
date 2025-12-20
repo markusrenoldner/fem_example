@@ -371,5 +371,5 @@ if __name__ == "__main__":
 
     np.set_printoptions(threshold=10000, precision=3, suppress=True, linewidth=1000)
 
-    # solve_poission(4, plotting=True)
+    # solve_poission(50, plotting=True)
     conv_test(5)
