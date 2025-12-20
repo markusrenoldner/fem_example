@@ -349,7 +349,7 @@ def conv_test(k_max):
 # def conv_test(n_max):
 
 #     for n in range(2,n_max):
-        u, L2_error, H1_error = solve_poission(n)
+        u, L2_error, H1_error = solve_poisson(n)
         # print(f"n={n}, L2 error={L2_error:.6f}")
         errors.append(L2_error)
         errors1.append(H1_error)
@@ -371,5 +371,5 @@ if __name__ == "__main__":
 
     np.set_printoptions(threshold=10000, precision=3, suppress=True, linewidth=1000)
 
-    # solve_poisson(50, plotting=True)
+    solve_poisson(50, plotting=True)
     conv_test(5)
