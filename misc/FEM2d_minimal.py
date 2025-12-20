@@ -252,13 +252,13 @@ def compute_L2_error(nodes, elements, u_h, u_exact):
 
 def compute_L2_error_higher(nodes, elements, u_h, u_exact):
     # 3-point quadrature for triangles (degree 2 exact)
-    # Points in barycentric coordinates and weights
+    # Use the same rule as local_load_vector_higher for consistency
     qp_bary = np.array([
-        [1/2, 1/2, 0],
-        [0, 1/2, 1/2],
-        [1/2, 0, 1/2]
+        [1/6, 1/6, 2/3],
+        [1/6, 2/3, 1/6],
+        [2/3, 1/6, 1/6]
     ])
-    weights = np.array([1/3, 1/3, 1/3])  # all weights sum to 1
+    weights = np.array([1/3, 1/3, 1/3])
 
     error_sq = 0.0
     for el in elements:
