@@ -63,7 +63,8 @@ def local_stiffness(tri_nodes):
     area, J = triangle_area_and_transform(tri_nodes)
     JT_inv = np.linalg.inv(J).T  # J^{-T}
     
-    grads_phys = grads_ref @ JT_inv  # shape (3,2)
+    # grads_phys = grads_ref @ JT_inv  # shape (3,2)
+    grads_phys = np.linalg.solve(J.T, grads_ref.T).T
 
     Ke = np.zeros((3, 3))
     for i in range(3):
