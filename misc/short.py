@@ -167,7 +167,7 @@ def solve_poission(n=2,plotting=False):
     K = assemble_global_matrix(nodes, elements)
     # print(K)
 
-    f = lambda x, y: -2*np.pi**2*np.sin(np.pi*x)*np.sin(np.pi*y)
+    f = lambda x, y: +2*np.pi**2*np.sin(np.pi*x)*np.sin(np.pi*y)
 
     b = assemble_load_vector(nodes, elements, f)
     # print(b)
