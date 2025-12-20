@@ -280,8 +280,39 @@ def compute_L2_error_higher(nodes, elements, u_h, u_exact):
     return np.sqrt(error_sq)
 
 
+
+def compute_H1_error(nodes, elements, u_h, grad_u_exact):
+    error_sq = 0.0
+    for el in elements:
+        tri_nodes = nodes[el]
+        area, J = triangle_area_and_transform(tri_nodes)
+        JT_inv = np.linalg.inv(J).T
+        
+        grads_ref = reference_gradients()  # shape (3,2)
+        # grads_phys = grads_ref @ JT_inv  # shape (3,2)
+        grads_phys = np.linalg.solve(J.T, grads_ref.T).T
+        
+        # FEM solution gradient on element (constant)
+        grad_u_h = np.zeros(2)
+        for i in range(3):
+            grad_u_h += u_h[el[i]] * grads_phys[i]
+        
+        # Midpoint for exact gradient evaluation
+        midpoint = np.mean(tri_nodes, axis=0)
+        grad_u_ex = np.array(grad_u_exact(midpoint[0], midpoint[1]))
+        
+        error_sq += area * np.sum((grad_u_h - grad_u_ex)**2)
+    return np.sqrt(error_sq)
+
+
+
 def u_exact(x, y):
     return np.sin(np.pi * x) * np.sin(np.pi * y)
+
+def grad_u_exact(x, y):
+    ux = np.pi * np.cos(np.pi*x) * np.sin(np.pi*y)
+    uy = np.pi * np.sin(np.pi*x) * np.cos(np.pi*y)
+    return np.array([ux, uy])
 
 def solve_poission(n=2,plotting=False):
 
@@ -306,24 +337,32 @@ def solve_poission(n=2,plotting=False):
     if plotting: plot_fem_solution(nodes, elements, u)
 
     L2_error = compute_L2_error_higher(nodes, elements, u, u_exact)
+    H1_error = compute_H1_error(nodes, elements, u, grad_u_exact)
 
-
-    return u, L2_error
+    return u, L2_error, H1_error
 
 def conv_test(k_max):
     errors = []
+    errors1 = []
     for k in range(0,k_max):
         n=2**k
 # def conv_test(n_max):
 
 #     for n in range(2,n_max):
-        u, L2_error = solve_poission(n)
+        u, L2_error, H1_error = solve_poission(n)
         # print(f"n={n}, L2 error={L2_error:.6f}")
         errors.append(L2_error)
+        errors1.append(H1_error)
 
     for i in range(0, len(errors)):
         rate = np.log(errors[i-1]/errors[i]) / np.log(2)
+        if i==0: rate=0
         print(errors[i], "\t", rate)
+    print("-------")
+    for i in range(0,len(errors1)):
+        rate = np.log(errors1[i-1]/errors1[i]) / np.log(2)
+        if i==0: rate=0
+        print(errors1[i], "\t", rate)
 
     return
 
