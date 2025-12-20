@@ -7,11 +7,13 @@ import matplotlib.tri as mtri
 
 
 def generate_structured_triangular_mesh(nx, ny):
-
     # Generate nodes
     x = np.linspace(0, 1, nx + 1)
     y = np.linspace(0, 1, ny + 1)
+
     xv, yv = np.meshgrid(x, y, indexing='ij')
+
+
     nodes = np.column_stack([xv.ravel(), yv.ravel()])  
 
     # Map 2D grid index to 1D node index
@@ -56,29 +58,6 @@ def triangle_area_and_transform(tri_nodes):
     area = 0.5 * abs(detJ)
     return area, J, detJ
 
-# def local_stiffness(tri_nodes):
-#     grads_ref = reference_gradients()  # shape (3,2)
-#     area, J, detJ = triangle_area_and_transform(tri_nodes)
-#     JT_inv = np.linalg.inv(J).T  # J^{-T}
-    
-#     grads_phys = grads_ref @ JT_inv  # shape (3,2)
-
-#     Ke = np.zeros((3, 3))
-#     for i in range(3):
-#         for j in range(3):
-#             Ke[i, j] = np.dot(grads_phys[i], grads_phys[j]) * area
-#     return Ke
-# def local_stiffness(tri_nodes):
-#     # Reorder to ensure (v0, v1, v2) forms a positively oriented triangle
-#     v0, v1, v2 = tri_nodes
-#     J = np.column_stack((v1 - v0, v2 - v0))
-#     if np.linalg.det(J) < 0:
-#         tri_nodes[[1, 2]] = tri_nodes[[2, 1]]  # consistent with ref triangle
-#     grads_ref = reference_gradients()
-#     area, J, _ = triangle_area_and_transform(tri_nodes)
-#     JT_inv = np.linalg.inv(J).T
-#     grads_phys = grads_ref @ JT_inv
-#     return grads_phys @ grads_phys.T * area
 def local_stiffness(tri_nodes):
     v0, v1, v2 = tri_nodes
     J = np.column_stack((v1 - v0, v2 - v0))
@@ -94,7 +73,6 @@ def local_stiffness(tri_nodes):
 def assemble_global_matrix(nodes, elements):
     N_nodes = nodes.shape[0]
     K = np.zeros((N_nodes, N_nodes))
-    print(elements)
     for elem,i in zip(elements,range(len(elements))):
         elem = elements[i]
         if i>20: continue
@@ -135,8 +113,8 @@ if __name__ == "__main__":
     # boundary_facets = mesh.locate_entities_boundary(msh, msh.topology.dim - 1, lambda x: np.full(x.shape[1], True))
     # facet_to_nodes = msh.topology.connectivity(msh.topology.dim - 1, 0)
     # boundary_nodes = np.unique(np.hstack([facet_to_nodes.links(f) for f in boundary_facets]))
-    print(nodes)
-    print(elements)
+    print("nodes\n",nodes)
+    print("elems\n",elements)
 
 
 
