@@ -1,9 +1,7 @@
 
 # custom P1 FEM assembly code
 
-Custom 2D Lagrange P1 finite element assembly library that also constructs a simplicial (triangular) mesh from scratch. Built for educational purposes to illustrate local-to-global assembly, Dirichlet boundary conditions, solving, and error estimation on structured meshes.
-
-Custom Lagrange P1 finite element library with built-in simplicial (triangular) mesh generation. Designed for education, demonstrating 
+Custom 2D Lagrange P1 finite element library with built-in simplicial (triangular) mesh generation. Designed for education, demonstrating 
 
 - mesh generation
 - local-to-global assembly
