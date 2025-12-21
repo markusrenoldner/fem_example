@@ -17,6 +17,8 @@ def solve_poisson(n,f, g, plotting=False):
     nx, ny = n,n
     nodes, elements, boundary_nodes = generate_structured_triangular_mesh(nx, ny)
 
+    if plotting: plot_mesh(nodes, elements)
+
     K = assemble_global_matrix(nodes, elements)
     # print(K)
 
@@ -121,7 +123,7 @@ if __name__ == "__main__":
     u_exact, grad_u_exact, f, g = data(testcase=2)
 
     # visualise solution
-    solve_poisson(3, f, g, plotting=True) 
+    solve_poisson(4, f, g, plotting=True) 
 
     # error conv
     errors, errors1 = conv_test(7, f, g)
