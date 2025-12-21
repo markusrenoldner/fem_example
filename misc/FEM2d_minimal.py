@@ -47,31 +47,6 @@ def generate_structured_triangular_mesh(nx, ny):
 
 
 
-def plot_mesh(nodes, elements):
-    fig, ax = plt.subplots()
-    
-    # Draw triangle edges
-    edges = []
-    for tri in elements:
-        for i in range(3):
-            a = nodes[tri[i]]
-            b = nodes[tri[(i + 1) % 3]]
-            edges.append([a, b])
-    edge_collection = LineCollection(edges, colors='k', linewidths=0.5)
-    ax.add_collection(edge_collection)
-
-    # Draw nodes
-    ax.plot(nodes[:, 0], nodes[:, 1], 'o', markersize=5, color='red')
-
-    ax.set_aspect('equal')
-    ax.set_xlim(0, 1)
-    ax.set_ylim(0, 1)
-    ax.set_title("2D Triangular Mesh")
-    plt.tight_layout()
-    plt.show()
-
-
-
 def reference_gradients():
     return np.array([
         [-1.0, -1.0],  # grad phi_1
@@ -122,27 +97,6 @@ def local_load_vector(tri_nodes, f):
     fe = np.full(3, f_val * area / 3)
     return fe
 
-def local_load_vector_higher(tri_nodes, f):
-    area, _ = triangle_area_and_transform(tri_nodes)
-    # 3-point quadrature for triangles (degree 2 exact)
-    qp_bary = np.array([
-        [1/6, 1/6, 2/3],
-        [1/6, 2/3, 1/6],
-        [2/3, 1/6, 1/6]
-    ])
-    weights = np.array([1/3, 1/3, 1/3])
-    fe = np.zeros(3)
-    for k in range(3):
-        l1, l2, l3 = qp_bary[k]
-        x_qp = l1*tri_nodes[0,0] + l2*tri_nodes[1,0] + l3*tri_nodes[2,0]
-        y_qp = l1*tri_nodes[0,1] + l2*tri_nodes[1,1] + l3*tri_nodes[2,1]
-        f_val = f(x_qp, y_qp)
-        # P1 basis functions evaluated at quadrature point
-        phi = np.array([l1, l2, l3])
-        fe += weights[k] * f_val * phi
-    fe *= area
-    return fe
-
 
 
 def assemble_load_vector(nodes, elements, f):
@@ -151,7 +105,7 @@ def assemble_load_vector(nodes, elements, f):
 
     for elem in elements:
         tri_nodes = nodes[elem]
-        fe = local_load_vector_higher(tri_nodes, f)
+        fe = local_load_vector(tri_nodes, f)
         for i_local, i_global in enumerate(elem):
             b[i_global] += fe[i_local]
 
@@ -189,18 +143,6 @@ def apply_dirichlet_bc(K, b, boundary_nodes, g, nodes):
 def solve_system(K, b):
     u = np.linalg.solve(K, b)
     return u
-
-def plot_fem_solution(nodes, elements, u):
-    triang = mtri.Triangulation(nodes[:, 0], nodes[:, 1], elements)
-    plt.figure()
-    plt.tripcolor(triang, u, shading='gouraud')
-    plt.colorbar()
-    plt.xlabel('x')
-    plt.ylabel('y')
-    plt.title('FEM P1 solution')
-    plt.gca().set_aspect('equal')
-    plt.show()
-
 
 def compute_L2_error(nodes, elements, u_h, u_exact):
     error_sq = 0.0
@@ -261,8 +203,6 @@ def solve_poisson(n=2,plotting=False):
     K_mod, b_mod = apply_dirichlet_bc(K, b, boundary_nodes, g, nodes)
 
     u = solve_system(K_mod, b_mod)
-
-    if plotting: plot_fem_solution(nodes, elements, u)
 
     L2_error = compute_L2_error(nodes, elements, u, u_exact)
     H1_error = compute_H1_error(nodes, elements, u, grad_u_exact)
@@ -339,5 +279,4 @@ if __name__ == "__main__":
 
     np.set_printoptions(threshold=10000, precision=3, suppress=True, linewidth=1000)
 
-    solve_poisson(50, plotting=True)
-    conv_test(6)
+    conv_test(5)
