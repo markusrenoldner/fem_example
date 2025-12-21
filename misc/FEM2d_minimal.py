@@ -162,53 +162,33 @@ def apply_dirichlet_bc(K, b, boundary_nodes, g, nodes):
     b_mod = b.copy()
 
     for node in boundary_nodes:
-        K_mod[node, :] = 0
-        K_mod[:, node] = 0
-        K_mod[node, node] = 1
+        value = g(*nodes[node])
 
-        # Set prescribed value
-        b_mod[node] = g(*nodes[node])
+        # RHS correction using ORIGINAL column
+        b_mod -= K_mod[:, node] * value
+
+        # Enforce Dirichlet
+        K_mod[node, :] = 0.0
+        K_mod[:, node] = 0.0
+        K_mod[node, node] = 1.0
+        b_mod[node] = value
+
+    # for node in boundary_nodes:
+    #     K_mod[node, :] = 0
+    #     K_mod[:, node] = 0
+    #     K_mod[node, node] = 1
+
+    #     # Set prescribed value
+    #     b_mod[node] = g(*nodes[node])
+
+    #     value = g(*nodes[node])
+    #     b_mod -= K_mod[:, node] * value
 
     return K_mod, b_mod
 
 def solve_system(K, b):
     u = np.linalg.solve(K, b)
     return u
-
-def fem_p1_function(u, nodes, elements):
-    """
-    Return a function representing the P1 FEM solution.
-
-    Inputs:
-        u: (N_nodes,) array of nodal values
-        nodes: (N_nodes, 2) node coordinates
-        elements: (N_elements, 3) node indices per triangle
-
-    Output:
-        A function sol(x,y) that returns the FEM solution at (x,y)
-    """
-    from scipy.spatial import Delaunay
-    tri = Delaunay(nodes)
-
-    def sol(x, y):
-        p = np.array([x, y])
-        simplex = tri.find_simplex(p)
-        if simplex == -1:
-            raise ValueError("Point outside mesh")
-
-        vert_indices = elements[simplex]
-        verts = nodes[vert_indices]
-
-        # Compute barycentric coordinates
-        T = np.vstack((verts.T, np.ones(3)))
-        v = np.array([x, y, 1])
-        bary = np.linalg.solve(T, v)
-
-        return np.dot(bary, u[vert_indices])
-
-    return sol
-
-
 
 def plot_fem_solution(nodes, elements, u):
     triang = mtri.Triangulation(nodes[:, 0], nodes[:, 1], elements)
@@ -265,14 +245,6 @@ def compute_H1_error(nodes, elements, u_h, grad_u_exact):
 
 
 
-def u_exact(x, y):
-    return np.sin(np.pi * x) * np.sin(np.pi * y)
-
-def grad_u_exact(x, y):
-    ux = np.pi * np.cos(np.pi*x) * np.sin(np.pi*y)
-    uy = np.pi * np.sin(np.pi*x) * np.cos(np.pi*y)
-    return np.array([ux, uy])
-
 def solve_poisson(n=2,plotting=False):
 
     nx, ny = n,n
@@ -281,13 +253,10 @@ def solve_poisson(n=2,plotting=False):
     K = assemble_global_matrix(nodes, elements)
     # print(K)
 
-    f = lambda x, y: +2*np.pi**2*np.sin(np.pi*x)*np.sin(np.pi*y)
 
     b = assemble_load_vector(nodes, elements, f)
     # print(b)
 
-    # dirichlet
-    g = lambda x, y: 0.0 
 
     K_mod, b_mod = apply_dirichlet_bc(K, b, boundary_nodes, g, nodes)
 
@@ -312,12 +281,12 @@ def conv_test(k_max):
         # print(f"n={n}, L2 error={L2_error:.6f}")
         errors.append(L2_error)
         errors1.append(H1_error)
-
+    print("L2 error \t\t rate")
     for i in range(0, len(errors)):
         rate = np.log(errors[i-1]/errors[i]) / np.log(2)
         if i==0: rate=0
         print(errors[i], "\t", rate)
-    print("-------")
+    print("\nH1 error \t\t rate")
     for i in range(0,len(errors1)):
         rate = np.log(errors1[i-1]/errors1[i]) / np.log(2)
         if i==0: rate=0
@@ -325,8 +294,40 @@ def conv_test(k_max):
 
     return
 
+def data(testcase=1):
+
+    if testcase==1:
+
+        def u_exact(x, y):
+            return np.sin(np.pi * x) * np.sin(np.pi * y)
+
+        def grad_u_exact(x, y):
+            ux = np.pi * np.cos(np.pi*x) * np.sin(np.pi*y)
+            uy = np.pi * np.sin(np.pi*x) * np.cos(np.pi*y)
+            return np.array([ux, uy])
+        
+        f = lambda x, y: +2*np.pi**2*np.sin(np.pi*x)*np.sin(np.pi*y)
+
+        g = lambda x, y: 0.0 
+
+    elif testcase == 2:
+        def u_exact(x, y):
+            return np.sin(np.pi * x) * np.sinh(np.pi * y)
+
+        def grad_u_exact(x, y):
+            ux = np.pi * np.cos(np.pi*x) * np.sinh(np.pi*y)
+            uy = np.pi * np.sin(np.pi*x) * np.cosh(np.pi*y)
+            return np.array([ux, uy])
+
+        f = lambda x, y: 0
+        g = lambda x, y: u_exact(x,y) 
+
+    return u_exact, grad_u_exact, f, g
 
 if __name__ == "__main__":
+
+    u_exact, grad_u_exact, f, g = data(testcase=2)
+
 
     np.set_printoptions(threshold=10000, precision=3, suppress=True, linewidth=1000)
 
