@@ -48,13 +48,6 @@ def generate_structured_triangular_mesh(nx, ny):
 
 
 def plot_mesh(nodes, elements):
-    """
-    Plot a 2D triangular mesh.
-
-    Parameters:
-        nodes (ndarray): shape (num_nodes, 2), coordinates of nodes
-        elements (ndarray): shape (num_elements, 3), indices of triangle vertices
-    """
     fig, ax = plt.subplots()
     
     # Draw triangle edges
@@ -119,11 +112,6 @@ def assemble_global_matrix(nodes, elements):
                 K[i_global, j_global] += Ke[i_local, j_local]
 
     return K
-
-
-
-
-
 
 
 def local_load_vector(tri_nodes, f):
@@ -250,35 +238,6 @@ def compute_L2_error(nodes, elements, u_h, u_exact):
         error_sq += area * (u_h_mid - u_ex_mid)**2
     return np.sqrt(error_sq)
 
-def compute_L2_error_higher(nodes, elements, u_h, u_exact):
-    # 3-point quadrature for triangles (degree 2 exact)
-    # Use the same rule as local_load_vector_higher for consistency
-    qp_bary = np.array([
-        [1/6, 1/6, 2/3],
-        [1/6, 2/3, 1/6],
-        [2/3, 1/6, 1/6]
-    ])
-    weights = np.array([1/3, 1/3, 1/3])
-
-    error_sq = 0.0
-    for el in elements:
-        tri_nodes = nodes[el]  # (3,2)
-        area, _ = triangle_area_and_transform(tri_nodes)
-
-        u_el = u_h[el]  # FEM nodal values
-
-        for k in range(3):
-            l1, l2, l3 = qp_bary[k]
-            # Evaluate FEM solution at quadrature point
-            u_h_qp = l1*u_el[0] + l2*u_el[1] + l3*u_el[2]
-            # Map barycentric to physical coordinates
-            x_qp = l1*tri_nodes[0,0] + l2*tri_nodes[1,0] + l3*tri_nodes[2,0]
-            y_qp = l1*tri_nodes[0,1] + l2*tri_nodes[1,1] + l3*tri_nodes[2,1]
-            u_ex_qp = u_exact(x_qp, y_qp)
-            error_sq += weights[k] * area * (u_h_qp - u_ex_qp)**2
-
-    return np.sqrt(error_sq)
-
 
 
 def compute_H1_error(nodes, elements, u_h, grad_u_exact):
@@ -336,7 +295,7 @@ def solve_poisson(n=2,plotting=False):
 
     if plotting: plot_fem_solution(nodes, elements, u)
 
-    L2_error = compute_L2_error_higher(nodes, elements, u, u_exact)
+    L2_error = compute_L2_error(nodes, elements, u, u_exact)
     H1_error = compute_H1_error(nodes, elements, u, grad_u_exact)
 
     return u, L2_error, H1_error
