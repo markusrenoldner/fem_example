@@ -322,6 +322,14 @@ def data(testcase=1):
         f = lambda x, y: 0
         g = lambda x, y: u_exact(x,y) 
 
+    elif testcase == 4:
+        u_exact =lambda x,y: 3*x**2 + y + 5
+        grad_u_exact =lambda x,y: np.array([6*x,1])
+        f =lambda x,y: 6
+        g =lambda x,y: u_exact(x,y) 
+
+        print("for some reason test 4 fails\n")
+
     return u_exact, grad_u_exact, f, g
 
 if __name__ == "__main__":
@@ -332,4 +340,4 @@ if __name__ == "__main__":
     np.set_printoptions(threshold=10000, precision=3, suppress=True, linewidth=1000)
 
     solve_poisson(50, plotting=True)
-    conv_test(5)
+    conv_test(6)
