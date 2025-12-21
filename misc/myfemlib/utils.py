@@ -56,6 +56,10 @@ def fem_p1_function(u, nodes, elements):
     Output:
         A function sol(x,y) that returns the FEM solution at (x,y)
     """
+    
+    raise NotImplementedError("this function may be wrong")
+
+
     from scipy.spatial import Delaunay
     tri = Delaunay(nodes)
 
