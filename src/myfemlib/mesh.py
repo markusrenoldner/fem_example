@@ -52,20 +52,20 @@ def generate_structured_triangular_mesh(nx, ny):
 # TODO: use unstruc mesh from gmsh
 
 import numpy as np
-import matplotlib.pyplot as plt
-import gmsh
+# import matplotlib.pyplot as plt
+# import gmsh
 
-def generate_gmsh_mesh(nx,ny):
+# def generate_gmsh_mesh(nx,ny):
 
-    # mesh
-    gmsh.initialize()
-    gmsh.clear()
-    gdim = 2
-    rectangle = gmsh.model.occ.addRectangle(0, 0, 0, 1, 1)
-    gmsh.model.occ.synchronize()
-    gmsh.model.addPhysicalGroup(gdim, [rectangle], tag=1)
-    gmsh.model.mesh.generate(gdim)
-    gmsh.fltk.run() # view mesh
-    gmsh.finalize()
+#     # mesh
+#     gmsh.initialize()
+#     gmsh.clear()
+#     gdim = 2
+#     rectangle = gmsh.model.occ.addRectangle(0, 0, 0, 1, 1)
+#     gmsh.model.occ.synchronize()
+#     gmsh.model.addPhysicalGroup(gdim, [rectangle], tag=1)
+#     gmsh.model.mesh.generate(gdim)
+#     gmsh.fltk.run() # view mesh
+#     gmsh.finalize()
 
-    return
+#     return
