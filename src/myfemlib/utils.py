@@ -101,7 +101,8 @@ def compute_L2_error(nodes, elements, u_h, u_exact):
     error_sq = 0.0
     for el in elements:
         tri_nodes = nodes[el]
-        area, J = (tri_nodes)
+        # area, J = (tri_nodes)
+        area, J = triangle_area_and_transform(tri_nodes)
         # Midpoint of triangle for quadrature (P1 exact)
         midpoint = np.mean(tri_nodes, axis=0)
         
